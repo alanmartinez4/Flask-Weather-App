@@ -1,3 +1,4 @@
+import os
 import requests
 import string
 from flask import Flask, render_template, request, redirect, url_for, flash
@@ -5,9 +6,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///weather.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'thisisasecret'
+my_secret = os.environ['weather_key']
+app.config['SECRET_KEY'] = my_secret
+
 db = SQLAlchemy(app)
 
 
@@ -16,7 +19,7 @@ class City(db.Model) :
     name = db.Column(db.String(50),nullable=False)
 
 def get_weather_data(city):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=metric&appid=b21a2633ddaac750a77524f91fe104e7"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&units=imperial&appid=f3f5e38e90f2c3e71fc9adc74e269941"
     r = requests.get(url).json()
     return r
 
@@ -36,7 +39,7 @@ def index_get():
         }
         weather_data.append(weather)
 
-    return render_template('weather.html', weather_data=weather_data)
+    return render_template('index.html', weather_data=weather_data)
 
 @app.route('/', methods=['POST'])
 def index_post():
@@ -74,3 +77,7 @@ def delete_city( name ):
 
     flash(f'Successfully deleted { city.name }!', 'success')
     return redirect(url_for('index_get'))
+
+if __name__ == '__main__': 
+  db.create_all()
+  app.run(debug=True, host='0.0.0.0', port=81)
